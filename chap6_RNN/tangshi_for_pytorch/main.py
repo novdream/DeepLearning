@@ -4,7 +4,7 @@ import torch
 from torch.autograd import Variable
 import torch.optim as optim
 
-import rnn
+import rnn  as rnn_lstm
 
 start_token = 'G'
 end_token = 'E'
@@ -23,7 +23,10 @@ def process_poems1(file_name):
     with open(file_name, "r", encoding='utf-8', ) as f:
         for line in f.readlines():
             try:
-                title, content = line.strip().split(':')
+                line = line.split(':')
+                title = line[0]
+                content = line[1].strip()
+                # title, content = line.strip().split(':')
                 # content = content.replace(' ', '').replace('，','').replace('。','')
                 content = content.replace(' ', '')
                 if '_' in content or '(' in content or '（' in content or '《' in content or '[' in content or \
@@ -201,14 +204,18 @@ def gen_poem(begin_word):
     rnn_model.load_state_dict(torch.load('./poem_generator_rnn'))
 
     # 指定开始的字
-
+    print(begin_word)
     poem = begin_word
     word = begin_word
-    while word != end_token:
+    prep = ['也','之','乎','者']
+    while True:
         input = np.array([word_int_map[w] for w in poem],dtype= np.int64)
         input = Variable(torch.from_numpy(input))
         output = rnn_model(input, is_test=True)
         word = to_word(output.data.tolist()[-1], vocabularies)
+        if word == end_token and len(poem)<10:
+            index = np.random.randint(0, len(prep)-1)
+            word = prep[index]
         poem += word
         # print(word)
         # print(poem)
